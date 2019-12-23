@@ -22,26 +22,47 @@ fun main(args: Array<String>) {
                 .map({ s -> s.substring(0, s.length - 4) })
                 .toSortedSet();
 
+            val discrimRegex = Regex("-[0-9]$")
             // make secondfiles the names of all secondfiles in a group of sequential files
             var secondFiles = names
+                .map { n ->
+                    if (n.length > 2 && n.substring(0, n.length - 2).matches(discrimRegex)) n.substring(
+                        0,
+                        n.length - 2
+                    ) else n
+                }
                 .filter { n -> n.endsWith("-02") }
                 .map { n -> n.substring(0, n.length - 3) }
                 .map { n -> if (n.length > 3 && n[n.length - 3] == '-') n.substring(0, n.length - 3) else n }
             println("number of secondfiles found: " + secondFiles.size.toString())
             var endnumRegex = Regex("-[0-9][0-9]")
+            var endnumRegex2 = Regex("-[0-9][0-9]-[0-9]")
             var sortedGroups =
                 secondFiles
                     .map { s -> Pair(s, names.subSet(s, s + "z").map { name -> name.substring(s.length) }) }
                     .filter { p -> p.second.size > 1 }
-                    .filter { p -> p.second.first().isEmpty() || p.second.first().endsWith("01") }
+                    .filter { p ->
+                        val first = p.second.first()
+                        first.isEmpty()
+                            || first.matches(discrimRegex)
+                            || first.endsWith("01") || first.length == 4 && first.startsWith("01-")
+                    }
                     .filter({ p ->
                         var excptfirst = p.second.subList(1, p.second.size)
                         if (excptfirst.all { s ->
                                 s.length > 3
                                         && s.substring(s.length - 3).matches(endnumRegex)
+                                        ||
+                                        s.length > 5
+                                        && s.substring(s.length - 5).matches(endnumRegex2)
+
                             }) {
                             excptfirst
-                                .map { s -> Integer.parseInt(s.substring(s.length - 2)) }
+                                .map { s ->
+                                    if (s.matches(discrimRegex))
+                                        Integer.parseInt(s.substring(s.length - 4, 2))
+                                    else Integer.parseInt(s.substring(s.length - 2))
+                                }
                                 .equals((2..excptfirst.size + 1).toList())
                         } else
                             false
@@ -60,7 +81,7 @@ fun main(args: Array<String>) {
                         File(prefix + v + ".txt")
                     }
                     input.forEachLine { l -> content.append(l).append("\n") }
-                    val destName = File(catenated.toPath().toString() + "/" + input.name )
+                    val destName = File(catenated.toPath().toString() + "/" + input.name)
                     val renamed = input.renameTo(destName)
                     if (!renamed) {
                         println("could not rename " + input.name)
@@ -68,7 +89,7 @@ fun main(args: Array<String>) {
                 }
                 val destName = prefix + e.value.last() + ".cat.txt"
                 println("writing " + destName)
-                File(destName).writeText(content.toString(),Charsets.UTF_8);
+                File(destName).writeText(content.toString(), Charsets.UTF_8);
                 println("written " + destName)
 
             })
