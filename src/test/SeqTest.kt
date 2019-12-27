@@ -1,0 +1,7 @@
+/**
+ * @author aschoerk
+ */
+
+
+class SeqTest {
+}
