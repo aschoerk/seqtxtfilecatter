@@ -1,21 +1,22 @@
 import java.io.File
 
 
-fun handleDir(d: File) {
+fun handleDir(d: File, destDir: String) {
+    File(destDir).mkdirs()
     d.listFiles()
         .groupBy { f -> f.isDirectory }
         .entries
         .forEach({
             e ->
             when(e.key) {
-                true -> e.value.filter({d -> !d.name.endsWith("done")}).forEach({d -> handleDir(d)})
-                false -> handleFiles(d, e.value)
+                true -> e.value.filter({d -> !d.name.endsWith("done")}).forEach({d -> handleDir(d, destDir + "/" + d.name)})
+                false -> handleFiles(d, destDir, e.value)
             }
         })
 }
 
 
-fun handleTextFiles(txtFileNames: List<String>): Map<String,List<String>> {
+fun findSortedGroups(txtFileNames: List<String>): Map<String,List<String>> {
 
     val names = txtFileNames.map({ s -> s.substring(0, s.length - 4) })
         .toSortedSet();
@@ -70,14 +71,14 @@ fun handleTextFiles(txtFileNames: List<String>): Map<String,List<String>> {
     return sortedGroups;
 }
 
-fun handleFiles(directory: File, f: List<File>) {
+fun handleFiles(directory: File, destDir: String, f: List<File>) {
     // make names all textfile-names without .txt, sorted
     val txtFileNames = f.map { f -> f.name }
         .filter({ s -> s.endsWith(".txt") && !s.endsWith(".cat.txt") && s.length > 4 })
 
-    val sortedGroups = handleTextFiles(txtFileNames)
+    val sortedGroups = findSortedGroups(txtFileNames)
 
-    val catenated = File(directory.absolutePath + "/" +  directory.name + "done");
+    val catenated = File(destDir);
     catenated.mkdir();
 
     println("number of sorted groups found: " + sortedGroups.size.toString())
@@ -120,7 +121,7 @@ fun main(args: Array<String>) {
     for (directoryName in args) {
         var f = File(directoryName);
         if (f.isDirectory) {
-            handleDir(f)
+            handleDir(f, directoryName + "/done")
         }
     }
 }
